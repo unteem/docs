@@ -65,6 +65,7 @@ Make sure you have a recent version of Docker and [Docker Compose](https://docs.
 
 ```shellscript
 $ docker -v
+  Docker version 27.4.1, build b9d17ea
 
 Docker version 20.10.2, build 2291f61
 
