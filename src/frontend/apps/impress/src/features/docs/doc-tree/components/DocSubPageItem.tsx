@@ -1,13 +1,16 @@
-import { TreeViewItem, TreeViewNodeProps } from '@gouvfr-lasuite/ui-kit';
+import {
+  TreeViewItem,
+  TreeViewNodeProps,
+  useTreeContext,
+} from '@gouvfr-lasuite/ui-kit';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { css } from 'styled-components';
 
 import { Box, Icon, Text } from '@/components';
 import { useCunninghamTheme } from '@/cunningham';
-import { Doc } from '@/features/docs/doc-management';
+import { Doc, KEY_SUB_PAGE, useDoc } from '@/features/docs/doc-management';
 import { useLeftPanelStore } from '@/features/left-panel';
-
-import { useDocTreeData } from '../context/DocTreeContext';
 
 import Logo from './../assets/sub-page-logo.svg';
 import { DocTreeItemActions } from './DocTreeItemActions';
@@ -29,24 +32,46 @@ type Props = TreeViewNodeProps<Doc> & {
 };
 
 export const DocSubPageItem = ({ doc, setSelectedNode, ...props }: Props) => {
-  const { loadChildren, node } = props;
+  const treeContext = useTreeContext<Doc>();
 
+  const { node } = props;
   const { spacingsTokens } = useCunninghamTheme();
   const spacing = spacingsTokens();
   const router = useRouter();
   const { togglePanel } = useLeftPanelStore();
-  const treeData = useDocTreeData();
+
+  const isInitialLoad = useRef(false);
+  const { data: docQuery } = useDoc(
+    { id: doc.id },
+    {
+      initialData: doc,
+      queryKey: [KEY_SUB_PAGE, { id: doc.id }],
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  useEffect(() => {
+    if (docQuery && isInitialLoad.current === true) {
+      console.log('docQuery', docQuery);
+      treeContext?.treeData.updateNode(docQuery.id, docQuery);
+    }
+    if (docQuery) {
+      isInitialLoad.current = true;
+    }
+  }, [docQuery, treeContext?.treeData]);
 
   const afterCreate = (createdDoc: Doc) => {
     const actualChildren = node.data.children ?? [];
 
-    if (actualChildren.length === 0 && loadChildren) {
-      loadChildren(node?.data.value)
+    if (actualChildren.length === 0) {
+      treeContext?.treeData
+        .handleLoadChildren(node?.data.value.id)
         .then((allChildren) => {
           node.open();
 
           router.push(`/docs/${doc.id}`);
-          treeData?.tree.setChildren(node.data.value.id, allChildren);
+          treeContext?.treeData.setChildren(node.data.value.id, allChildren);
           togglePanel();
         })
         .catch(console.error);
@@ -57,23 +82,16 @@ export const DocSubPageItem = ({ doc, setSelectedNode, ...props }: Props) => {
         childrenCount: 0,
         parentId: node.id,
       };
-      treeData?.tree.addChild(node.data.value.id, newDoc);
+      treeContext?.treeData.addChild(node.data.value.id, newDoc);
       node.open();
       router.push(`/docs/${createdDoc.id}`);
       togglePanel();
     }
   };
 
-  if (!treeData) {
-    return null;
-  }
-
   return (
     <TreeViewItem
       {...props}
-      loadChildren={() =>
-        treeData?.tree.handleLoadChildren(props.node.data.value.id)
-      }
       onClick={() => {
         setSelectedNode(props.node.data.value as Doc);
         router.push(`/docs/${props.node.data.value.id}`);
@@ -89,7 +107,7 @@ export const DocSubPageItem = ({ doc, setSelectedNode, ...props }: Props) => {
         $align="center"
         $css={css`
           .light-doc-item-actions {
-            display: 'flex';
+            display: flex;
             opacity: 0;
 
             &:has(.isOpen) {

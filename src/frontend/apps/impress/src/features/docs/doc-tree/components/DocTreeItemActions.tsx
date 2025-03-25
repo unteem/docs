@@ -1,4 +1,8 @@
-import { DropdownMenu, DropdownMenuOption } from '@gouvfr-lasuite/ui-kit';
+import {
+  DropdownMenu,
+  DropdownMenuOption,
+  useTreeContext,
+} from '@gouvfr-lasuite/ui-kit';
 import { useModal } from '@openfun/cunningham-react';
 import { useRouter } from 'next/navigation';
 import { Fragment, useState } from 'react';
@@ -8,9 +12,10 @@ import { css } from 'styled-components';
 import { Box, BoxButton, Icon } from '@/components';
 import { useLeftPanelStore } from '@/features/left-panel';
 
-import { Doc, ModalRemoveDoc } from '../../doc-management';
+import { Doc, ModalRemoveDoc, useCopyDocLink } from '../../doc-management';
 import { useCreateChildrenDoc } from '../api/useCreateChildren';
-import { useDocTreeData } from '../context/DocTreeContext';
+import { useDetachDoc } from '../api/useDetach';
+import MoveDocIcon from '../assets/doc-extract-bold.svg';
 
 type DocTreeItemActionsProps = {
   doc: Doc;
@@ -28,12 +33,54 @@ export const DocTreeItemActions = ({
   const { t } = useTranslation();
   const deleteModal = useModal();
   const { togglePanel } = useLeftPanelStore();
+  const copyLink = useCopyDocLink(doc.id);
 
-  const treeData = useDocTreeData();
+  const { mutate: detachDoc } = useDetachDoc();
+
+  const treeContext = useTreeContext<Doc>();
+
+  const handleDetachDoc = () => {
+    if (!treeContext?.root) {
+      return;
+    }
+
+    detachDoc(
+      { documentId: doc.id, rootId: treeContext.root.id },
+      {
+        onSuccess: () => {
+          treeContext.treeData.deleteNode(doc.id);
+          if (treeContext.root) {
+            treeContext.treeData.setSelectedNode(treeContext.root);
+            router.push(`/docs/${treeContext.root.id}`);
+          }
+        },
+      },
+    );
+  };
+
   const options: DropdownMenuOption[] = [
     {
+      label: t('Copy link'),
+      icon: <Icon iconName="link" $size="24px" />,
+      callback: copyLink,
+    },
+    {
+      label: t('Convert to doc'),
+      isDisabled: treeContext?.root?.id === doc.id,
+      icon: (
+        <Box
+          $css={css`
+            transform: scale(0.8);
+          `}
+        >
+          <MoveDocIcon />
+        </Box>
+      ),
+      callback: handleDetachDoc,
+    },
+    {
       label: t('Delete'),
-      icon: <Icon iconName="delete" />,
+      icon: <Icon iconName="delete" $size="24px" />,
       callback: deleteModal.open,
     },
   ];
@@ -41,24 +88,24 @@ export const DocTreeItemActions = ({
   const { mutate: createChildrenDoc } = useCreateChildrenDoc({
     onSuccess: (doc) => {
       onCreateSuccess?.(doc);
-
       togglePanel();
-      treeData?.tree.setSelectedNode(doc);
+      router.push(`/docs/${doc.id}`);
+      treeContext?.treeData.setSelectedNode(doc);
     },
   });
 
   const afterDelete = () => {
     if (parentId) {
       router.push(`/docs/${parentId}`);
-      treeData?.tree.selectNodeById(parentId);
-      treeData?.tree.deleteNode(doc.id);
-      void treeData?.tree.refreshNode(parentId);
-    } else if (doc.id === treeData?.root?.id && !parentId) {
+      treeContext?.treeData.selectNodeById(parentId);
+      treeContext?.treeData.deleteNode(doc.id);
+      void treeContext?.treeData.refreshNode(parentId);
+    } else if (doc.id === treeContext?.root?.id && !parentId) {
       router.push(`/docs/`);
-    } else if (treeData && treeData.root) {
-      router.push(`/docs/${treeData.root.id}`);
-      treeData?.tree.deleteNode(doc.id);
-      treeData?.tree.setSelectedNode(treeData.root);
+    } else if (treeContext && treeContext.root) {
+      router.push(`/docs/${treeContext.root.id}`);
+      treeContext?.treeData.deleteNode(doc.id);
+      treeContext?.treeData.setSelectedNode(treeContext.root);
     }
   };
 

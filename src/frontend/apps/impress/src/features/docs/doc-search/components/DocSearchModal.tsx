@@ -1,3 +1,4 @@
+import { useTreeContext } from '@gouvfr-lasuite/ui-kit';
 import { Modal, ModalProps, ModalSize } from '@openfun/cunningham-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -15,7 +16,6 @@ import {
 import { Doc, useInfiniteDocs } from '@/docs/doc-management';
 import { useResponsiveStore } from '@/stores';
 
-import { useDocTreeData } from '../../doc-tree/context/DocTreeContext';
 import EmptySearchIcon from '../assets/illustration-docs-empty.png';
 
 import {
@@ -36,7 +36,7 @@ export const DocSearchModal = ({
   ...modalProps
 }: DocSearchModalProps) => {
   const { t } = useTranslation();
-  const tree = useDocTreeData();
+  const treeContext = useTreeContext<Doc>();
   const router = useRouter();
 
   const [search, setSearch] = useState('');
@@ -56,17 +56,17 @@ export const DocSearchModal = ({
     page: 1,
     title: search,
     ...filters,
-    parent_id: tree?.root?.id,
+    parent_id: treeContext?.root?.id,
   });
   const loading = isFetching || isRefetching || isLoading;
   const handleInputSearch = useDebouncedCallback(setSearch, 300);
 
   const handleSelect = (doc: Doc) => {
-    if (tree?.initialRootId !== doc.id) {
-      tree?.tree.resetTree([]);
-      tree?.tree.setSelectedNode(doc);
-      tree?.setRoot(doc);
-      tree?.setInitialTargetId(doc.id);
+    if (treeContext?.initialTargetId !== doc.id) {
+      treeContext?.treeData.resetTree([]);
+      treeContext?.treeData.setSelectedNode(doc);
+      treeContext?.setRoot(doc);
+      treeContext?.setInitialTargetId(doc.id);
     }
     router.push(`/docs/${doc.id}`);
     modalProps.onClose?.();

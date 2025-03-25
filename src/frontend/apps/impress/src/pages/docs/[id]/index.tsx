@@ -1,3 +1,4 @@
+import { TreeProvider } from '@gouvfr-lasuite/ui-kit';
 import { Loader } from '@openfun/cunningham-react';
 import { useQueryClient } from '@tanstack/react-query';
 import Head from 'next/head';
@@ -11,11 +12,16 @@ import { KEY_AUTH, setAuthUrl } from '@/features/auth';
 import {
   Doc,
   KEY_DOC,
+  getDoc,
   useCollaboration,
   useDoc,
   useDocStore,
 } from '@/features/docs/doc-management/';
-import { DocTreeProvider } from '@/features/docs/doc-tree/context/DocTreeContext';
+import { getDocChildren } from '@/features/docs/doc-tree/api/useDocChildren';
+import {
+  serializeDocToSubPage,
+  subPageToTree,
+} from '@/features/docs/doc-tree/utils';
 import { MainLayout } from '@/layouts';
 import { useBroadcastStore } from '@/stores';
 import { NextPageWithLayout } from '@/types/next';
@@ -35,11 +41,21 @@ export function DocLayout() {
         <meta name="robots" content="noindex" />
       </Head>
 
-      <DocTreeProvider initialTargetId={id}>
+      <TreeProvider
+        initialNodeId={id}
+        onRefresh={async (docId: string) => {
+          const doc = await getDoc({ id: docId });
+          return serializeDocToSubPage(doc);
+        }}
+        onLoadChildren={async (docId: string) => {
+          const doc = await getDocChildren({ docId });
+          return subPageToTree(doc.results);
+        }}
+      >
         <MainLayout>
           <DocPage id={id} />
         </MainLayout>
-      </DocTreeProvider>
+      </TreeProvider>
     </>
   );
 }
