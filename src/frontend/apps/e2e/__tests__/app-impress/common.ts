@@ -4,6 +4,7 @@ export const CONFIG = {
   CRISP_WEBSITE_ID: null,
   COLLABORATION_WS_URL: 'ws://localhost:8083/collaboration/ws/',
   ENVIRONMENT: 'development',
+  FRONTEND_PATH_JSON_FOOTER: 'http://localhost:3000/contents/footer-demo.json',
   FRONTEND_THEME: 'europe',
   MEDIA_BASE_URL: 'http://localhost:8083',
   LANGUAGES: [

@@ -62,3 +62,4 @@ COLLABORATION_WS_URL=ws://localhost:8083/collaboration/ws/
 
 # Frontend
 FRONTEND_THEME=europe
+FRONTEND_PATH_JSON_FOOTER=http://localhost:3000/contents/footer-demo.json
