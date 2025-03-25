@@ -12,6 +12,7 @@ and this project adheres to
 
 - 📄(legal) Require contributors to sign a DCO #779
 - ✨(frontend) create europe theme #792
+- 🏗️ Footer configurable #792
 
 ## Changed
 
