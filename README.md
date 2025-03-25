@@ -24,6 +24,8 @@ Welcome to Docs! The open source document editor where your notes can become kno
 
 ## Why use Docs ❓
 
+⚠️ **If you plan to deploy Docs in production**, please remove the [docs/pdf exporters](https://github.com/suitenumerique/docs/blob/main/src/frontend/apps/impress/package.json#L22C7-L23C53) or sponsor [BlockNote](https://www.blocknotejs.org).  Docs 2.7.0 will update this repository so that it does not provide these packages by default, while making it easy to require them if needed.
+
 Docs is a collaborative text editor designed to address common challenges in knowledge building and sharing.
 
 ### Write
