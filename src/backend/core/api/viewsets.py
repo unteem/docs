@@ -1204,7 +1204,6 @@ class DocumentViewSet(
             logger.debug("Failed to extract parameters from subrequest URL: %s", exc)
             raise drf.exceptions.PermissionDenied() from exc
 
-
     @drf.decorators.action(detail=False, methods=["get"], url_path="media-auth")
     def media_auth(self, request, *args, **kwargs):
         """
