@@ -1204,16 +1204,6 @@ class DocumentViewSet(
             logger.debug("Failed to extract parameters from subrequest URL: %s", exc)
             raise drf.exceptions.PermissionDenied() from exc
 
-    def _auth_get_document(self, pk):
-        """
-        Retrieves the document corresponding to the given primary key (pk).
-        Raises PermissionDenied if the document is not found.
-        """
-        try:
-            return models.Document.objects.get(pk=pk)
-        except models.Document.DoesNotExist as exc:
-            logger.debug("Document with ID '%s' does not exist", pk)
-            raise drf.exceptions.PermissionDenied() from exc
 
     @drf.decorators.action(detail=False, methods=["get"], url_path="media-auth")
     def media_auth(self, request, *args, **kwargs):
