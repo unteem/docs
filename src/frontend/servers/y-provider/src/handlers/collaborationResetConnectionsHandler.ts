@@ -14,14 +14,7 @@ export const collaborationResetConnectionsHandler = (
   const room = req.query.room;
   const userId = req.headers['x-user-id'];
 
-  logger(
-    'Resetting connections in room:',
-    room,
-    'for user:',
-    userId,
-    'room:',
-    room,
-  );
+  logger('Resetting connections in room:', room, 'for user:', userId);
 
   if (!room) {
     res.status(400).json({ error: 'Room name not provided' });

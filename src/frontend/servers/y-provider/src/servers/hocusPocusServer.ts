@@ -1,72 +1,8 @@
 import { Server } from '@hocuspocus/server';
-import axios from 'axios';
 
-import { COLLABORATION_BACKEND_BASE_URL } from '@/env';
+import { fetchDocument } from '@/api/getDoc';
+import { getMe } from '@/api/getMe';
 import { logger } from '@/utils';
-import { IncomingHttpHeaders } from 'http';
-
-enum LinkReach {
-  RESTRICTED = 'restricted',
-  PUBLIC = 'public',
-  AUTHENTICATED = 'authenticated',
-}
-
-enum LinkRole {
-  READER = 'reader',
-  EDITOR = 'editor',
-}
-
-type Base64 = string;
-
-interface Doc {
-  id: string;
-  title?: string;
-  content: Base64;
-  creator: string;
-  is_favorite: boolean;
-  link_reach: LinkReach;
-  link_role: LinkRole;
-  nb_accesses_ancestors: number;
-  nb_accesses_direct: number;
-  created_at: string;
-  updated_at: string;
-  abilities: {
-    accesses_manage: boolean;
-    accesses_view: boolean;
-    ai_transform: boolean;
-    ai_translate: boolean;
-    attachment_upload: boolean;
-    children_create: boolean;
-    children_list: boolean;
-    collaboration_auth: boolean;
-    destroy: boolean;
-    favorite: boolean;
-    invite_owner: boolean;
-    link_configuration: boolean;
-    media_auth: boolean;
-    move: boolean;
-    partial_update: boolean;
-    restore: boolean;
-    retrieve: boolean;
-    update: boolean;
-    versions_destroy: boolean;
-    versions_list: boolean;
-    versions_retrieve: boolean;
-  };
-}
-
-export const fetchDocument = async (documentName: string, requestHeaders: IncomingHttpHeaders) => {
-  const response = await axios.get(
-    `${COLLABORATION_BACKEND_BASE_URL}/api/v1.0/documents/${documentName}/`,
-    {
-      headers: {
-        Cookie: requestHeaders['cookie'],
-        Origin: requestHeaders['origin'],
-      },
-    },
-  );
-  return response.data as Doc;
-};
 
 export const hocusPocusServer = Server.configure({
   name: 'docs-collaboration',
@@ -104,12 +40,24 @@ export const hocusPocusServer = Server.configure({
       }
 
       can_edit = document.abilities.update;
-    } catch (error) {
-      console.error('onConnect: backend error', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('onConnect: backend error', error.message);
+      }
+
       return Promise.reject(new Error('Backend error: Unauthorized'));
     }
 
     connection.readOnly = !can_edit;
+
+    /*
+     * Unauthenticated users can be allowed to connect
+     * so we flag only authenticated users
+     */
+    try {
+      const user = await getMe(requestHeaders);
+      requestHeaders['x-user-id'] = user.id;
+    } catch {}
 
     logger(
       'Connection established:',
@@ -119,7 +67,6 @@ export const hocusPocusServer = Server.configure({
       'room:',
       requestParameters.get('room'),
     );
-    console.debug('onConnect: Connection established', documentName);
     return Promise.resolve();
   },
 });
