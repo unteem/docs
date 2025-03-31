@@ -1,20 +1,17 @@
 upstream docs_backend {
-    server backend:8000 fail_timeout=0;
+    server ${BACKEND_HOST}:8000 fail_timeout=0;
 }
 
 upstream docs_frontend {
-    server frontend:8080 fail_timeout=0;
+    server ${FRONTEND_HOST}:8080 fail_timeout=0;
 }
 
 server {
-    listen 8083 ssl;
+    listen 8083;
     server_name localhost;
 
     # Disables server version feedback on pages and in headers
     server_tokens off;
-
-    ssl_certificate /etc/nginx/ssl/fullchain.pem;
-    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
     location @proxy_to_docs_backend {
         proxy_set_header X-Forwarded-Proto https;
@@ -66,7 +63,7 @@ server {
         proxy_set_header Connection "Upgrade";
 
         # Collaboration server
-        proxy_pass http://y-provider:4444;
+        proxy_pass http://${Y_PROVIDER_HOST}:4444;
 
         # Set appropriate timeout for WebSocket
         proxy_read_timeout 86400;
@@ -94,7 +91,7 @@ server {
 
     location  /collaboration/api/ {
         # Collaboration server
-        proxy_pass http://y-provider:4444;
+        proxy_pass http://${Y_PROVIDER_HOST}:4444;
         proxy_set_header Host $host;
     }
 
@@ -112,8 +109,8 @@ server {
         proxy_set_header X-Amz-Content-SHA256 $authContentSha256;
 
         # Get resource from Minio
-        proxy_pass http://minio:9000/docs-media-storage/;
-        proxy_set_header Host minio:9000;
+        proxy_pass http://${MINIO_HOST}:9000/docs-media-storage/;
+        proxy_set_header Host ${MINIO_HOST}:9000;
     }
 
     location /media-auth {

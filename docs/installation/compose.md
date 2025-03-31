@@ -1,66 +1,167 @@
 # Installation with docker compose
 
-We provide a configuration for running Docs in production using docker compose. This configuration is experimental, the official way to deploy Docs in production is to use [k8s](docs/installation/k8s.md)
+We provide an example of a configuration for running Docs using docker compose. This configuration is experimental, the official way to deploy Docs in production is to use [k8s](docs/installation/k8s.md)
 
 ## Requirements
 
 - A modern version of Docker and its Compose plugin.
-- SSL certificates for Docs domain and Keycloak.
-- Two domain name. One for the Docs application and an other one for Keycloak. Both can be a subdomain of a common domain. (example: docs.domain.tld and keycloak.domain.tld)
+- A domain name.
+- An Identity Provider that implements Open ID Connect protocol - we provide [an example to deploy Keycloak](../examples/compose/keycloak/README.md).
+- An Object Storage that implements S3 API - we provide [an example to deploy Minio](../examples/compose/minio/README.md).
+- A Postgresql database
+- A Redis database
+
+## Software Requirements
+
+Ensure you have Docker Compose(v2) installed on your host server. Follow the official guidelines for a reliable setup:
+
+Docker Compose is included with Docker Engine:
+
+- **Docker Engine:** We suggest adhering to the instructions provided by Docker
+  for [installing Docker Engine](https://docs.docker.com/engine/install/).
+
+For older versions of Docker Engine that do not include Docker Compose:
+
+- **Docker Compose:** Install it as per the [official documentation](https://docs.docker.com/compose/install/).
+
+> \[!NOTE\]
+> `docker-compose` may not be supported. You are advised to use `docker compose` instead.
 
 ## Installation
 
-- Clone this repository: `git clone https://github.com/suitenumerique/docs.git`
-- Then in the clone directory you can run the following command: `make bootsrap-production`
-
-## Configure your ssl certificates
-
-You have to provide the ssl certificates. The easiest way is to use [certbot](https://certbot.eff.org/), generate the certificates with it (both for Docs and Keycloak) and then mount them in ingress and keycloak containers. Two environment variables can be used for that: 
-- `DOCS_PROD_NGINX_CERT_FOLDER` path to the folder containing the certificates for Docs. This folder will be mounted in `/etc/nginx/ssl` in the container. You have to adapt the certificates name in the file `docker/files/production/etc/nginx/conf.d/default.conf` accordingly with the certificates name you have (see `ssl_certificate` and `ssl_certificate_key` directives).
-- `DOCS_PROD_KEYCLOAK_CERT_FOLDER` path to the folder containing the certificates for Keycloak. This folder will be mounted in `/etc/ssl/certs` in the container. You have to adapt the certificates name in the configuration file in `env.d/production/keycloak` to add the correct path for environment variables `KC_HTTPS_CERTIFICATE_FILE` and `KC_HTTPS_CERTIFICATE_KEY_FILE`.
+In this example we assume that we have the following services:
+- OIDC provider on https://id.govsloveopensource.eu
+- Object Storage on https://storage.govsloveopensource.eu
+- Docs on https://docs.govsloveopensource.eu
 
 ### Configuration
 
-All the configuration files are in the directory `env.d/production`. You have to edit all the files to complete them. For the OIDC information you will have them once Keycloak will be running and you have configured your own realm on it.
+All the configuration files are in the directory `env.d/production`. You have to edit all the variables
 
-#### env.d/production/minio
+#### OIDC
 
-All the settings related to Minio. You have to set a username and a password to manage the minio cluster. You will need them later in the `env.d/production/backend` file.
+Authentification in Docs is managed through Open ID Connect protocol, you will need a working Identity Provider that implements this protocol.
 
-#### env.d/production/postgresql
+You can follow our [example to deploy Keycloak](../examples/compose/keycloak/README.md)
 
-All the settings related to the Postgresql database used by the Django application.
+If you are using Keycloak here is an example of the variables that you will set:
+```
+OIDC_OP_JWKS_ENDPOINT=https://id.govsloveopensource.eu/realms/docs/protocol/openid-connect/certs
+OIDC_OP_AUTHORIZATION_ENDPOINT=https://id.govsloveopensource.eu/realms/docs/protocol/openid-connect/auth
+OIDC_OP_TOKEN_ENDPOINT=https://id.govsloveopensource.eu/realms/docs/protocol/openid-connect/token
+OIDC_OP_USER_ENDPOINT=https://id.govsloveopensource.eu/realms/docs/protocol/openid-connect/userinfo
+OIDC_OP_LOGOUT_ENDPOINT=https://id.govsloveopensource.eu/docs/impress/protocol/openid-connect/logout
+OIDC_RP_CLIENT_ID=<your_client_id>
+OIDC_RP_CLIENT_SECRET=<your_client_secret>
+OIDC_RP_SIGN_ALGO=RS256
+OIDC_RP_SCOPES="openid email"
+USER_OIDC_FIELD_TO_SHORTNAME="given_name"
+USER_OIDC_FIELDS_TO_FULLNAME="given_name,usual_name"
 
-#### env.d/production/yprovider
+LOGIN_REDIRECT_URL=https://docs.govsloveopensource.eu
+LOGIN_REDIRECT_URL_FAILURE=https://docs.govsloveopensource.eu
+LOGOUT_REDIRECT_URL=https://docs.govsloveopensource.eu
 
-All the settings related to the collaboration server. All the secret and api key must be generated.
+OIDC_REDIRECT_ALLOWED_HOSTS=["https://docs.govsloveopensource.eu"]
+```
 
-#### env.d/production/kc_postgresql
+#### Object Storage
 
-All the settings related to the Postgresql database used by keycloak.
+Files and medias are stored on an Object Store that needs to implement the S3 API. 
 
-#### env.d/production/keycloak
+You can follow our [on how to deploy Minio](../examples/compose/minio/README.md)
 
-All the settings related to the Keycloak application.
+Here is an example of the values you will set if you followed our examples:
+```
+STORAGES_STATICFILES_BACKEND=django.contrib.staticfiles.storage.StaticFilesStorage # to use the Django static files storage backend.
+AWS_S3_ENDPOINT_URL=https://storage.govsloveopensource.eu
+AWS_S3_ACCESS_KEY_ID=<s3 access key>
+AWS_S3_SECRET_ACCESS_KEY=<s3 secret key>
+AWS_STORAGE_BUCKET_NAME=docs-media
+MEDIA_BASE_URL=https://docs.govsloveopensource.eu
+```
 
-#### env.d/production/backend
+#### Postgresql
 
-All the settings related to the Django application. Only the settings you don't have for now are all the one related to OIDC. You will have them once the compose started and you can access to Keycloak.
+Docs is using Postgresql as a database, in our example we provide a way to deploy Postgresql but you can use an external postgresql, you will need to fill the values of the following variables:
+```
+DB_HOST=postgresql
+DB_NAME=docs
+DB_USER=docs
+DB_PASSWORD=<Set postgresql password>
+DB_PORT=5432
+```
 
-## Run the compose configuration
+#### Y Provider
 
-The compose configuration can be run with the following command: `make run-production`. The first start can be a little bit long, lots of things are created. Once started you can check that everything is running with the following command: `COMPOSE_FILE=compose.production.yaml ./bin/compose ps`
+The Y provider service is used to enable collaboration through websockets. You will need to fill the values of the following variables:
 
-## Configure keycloak
+```
+COLLABORATION_LOGGING=true
+Y_PROVIDER_API_KEY=<generate an api key>
+COLLABORATION_API_URL=https://docs.govsloveopensource.eu/collaboration/api/
+COLLABORATION_SERVER_ORIGIN=https://docs.govsloveopensource.eu
+COLLABORATION_SERVER_SECRET=<generate a secret>
+```
 
-You have to create a new realm in your Keycloak and once created you have to create a new OIDC client in it. You will use this client to configure the OIDC part in `env.d/production/backend`. This is the last missing part to complete the Django application configuration.
-Once the client information set in `env.d/production/backend` you have to start the containers again by running the commande `make run-production`. The command will recreate the containers with the good configuration.
+#### Docs
 
-### Helpers
+Docs backend is based on Django and the Django Rest Framework.
 
-there is a helper script to control the `docker compose` command. You can export the variable `COMPOSE_FILE` with the compose filename (`export COMPOSE_FILE=compose.production.yaml`). After you can run `./bin/compose` to run the docker compose command line.
+```
+DJANGO_ALLOWED_HOSTS=https://docs.govsloveopensource.eu
+DJANGO_SECRET_KEY=<generate a secret>
+DJANGO_SETTINGS_MODULE=impress.settings
+DJANGO_SUPERUSER_PASSWORD=<generate password>
 
-Makefile commands available:
-- `make bootstrap-production`: create the configuration files in `env.d/production`, create the directories : `data/production`. Both directories must be backup, if you loose them you loose all the data related to the application.
-- `make run-production`: up the ingress containers. Will start all the containers needed in cascade.
-- `make stop-production`: stop all the containers.
+# Logging
+# Set to DEBUG level for dev only
+LOGGING_LEVEL_HANDLERS_CONSOLE=ERROR
+LOGGING_LEVEL_LOGGERS_ROOT=INFO
+LOGGING_LEVEL_LOGGERS_APP=INFO
+
+# Python
+PYTHONPATH=/app
+```
+#### Mail 
+
+The following variables are used by the mail service that is used to send invitations. 
+
+```
+DJANGO_EMAIL_BACKEND: # The email backend to use for sending emails.
+DJANGO_EMAIL_HOST=<you mail host> # The email host to use for sending emails.
+DJANGO_EMAIL_HOST_USER=<your mail user> # The email host user to use for sending emails.
+DJANGO_EMAIL_HOST_PASSWORD<your mail password> # The email host password to use for sending emails.
+DJANGO_EMAIL_PORT=1025 # The email port to use for sending emails.
+DJANGO_EMAIL_FROM:<your email address> The default from email address to use for sending emails.
+
+DJANGO_EMAIL_USE_TLS: A flag to enable or disable TLS for email sending.
+DJANGO_EMAIL_USE_SSL: A flag to enable or disable SSL for email sending.
+
+
+DJANGO_EMAIL_BRAND_NAME="La Suite Numérique" # The brand name to use in email templates.
+DJANGO_EMAIL_LOGO_IMG=" https://docs.govsloveopensource.eu/assets/logo-suite-numerique.png" # The logo image to use in email templates.
+```
+#### AI
+
+Built-in AI actions let users generate, summarize, translate, and correct content, helping teams work faster and smarter.
+```
+AI_BASE_URL=https://openaiendpoint.com
+AI_API_KEY=password
+AI_MODEL=llama
+```
+
+#### Frontend theme
+
+You can either use the default theme that is provided, build your own with cuningham framework or provide a custom css.
+```
+FRONTEND_THEME=default
+FRONTEND_CSS_URL=https://storage.govsloveopensource.eu/themes/custom.css
+```
+
+## Start Docs 
+
+curl [compose file](../examples/compose/docs/compose.yaml)
+start service with docker-compose up -d
+
+explain how to configure TLS/SSL Https with [nginx-proxy](../examples/compose/nginx-proxy/)
