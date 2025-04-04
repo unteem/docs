@@ -39,7 +39,7 @@ Docs configuration is achieved through environment variables. A detailed descrip
 
 #### OIDC
 
-Authentification in Docs is managed through Open ID Connect protocol. A functional Identity Provider implementing this protocol is required.
+Authentification in Docs is managed through Open ID Connect protocol. A functional Identity Provider implementing this protocol is required.v
 
 For guidance, refer to our [Keycloak deploymente example](../examples/compose/keycloak/README.md)
 
@@ -75,7 +75,7 @@ The following environment variables must be set:
 AWS_S3_ENDPOINT_URL=https://storage.example.org
 AWS_S3_ACCESS_KEY_ID=<s3 access key>
 AWS_S3_SECRET_ACCESS_KEY=<s3 secret key>
-AWS_STORAGE_BUCKET_NAME=<bucket name>
+AWS_STORAGE_BUCKET_NAME=<bucket name> # set to docs-media-storage in our example
 MEDIA_BASE_URL=https://docs.example.org
 ```
 
@@ -85,15 +85,12 @@ Docs uses PostgreSQL as its database. Although an external PostgreSQL can be use
 
 The following environment variables must be set:
 ```env
-DB_HOST=<database host> 
-DB_NAME=<database name> 
-DB_USER=<username to connect to db> 
-DB_PASSWORD=<postgresql password> 
-DB_PORT=<database port> 
+DB_HOST=postgresql
+DB_NAME=docs
+DB_USER=docs
+DB_PASSWORD=<postgresql password>
+DB_PORT=5432
 ```
-
-If using our example, you do not edit to edit the values set by default
-
 #### Redis
 
 Docs uses Redis for caching. While an external Redis can be used, our example provides a deployment method.
@@ -110,10 +107,10 @@ The Y provider service enables collaboration through websockets.
 Set the following environment variables:
 ```env
 COLLABORATION_LOGGING=true
-Y_PROVIDER_API_KEY=<generate a random key>
+Y_PROVIDER_API_KEY=<generate an api key>
 COLLABORATION_API_URL=https://docs.example.org/collaboration/api/
 COLLABORATION_SERVER_ORIGIN=https://docs.example.org
-COLLABORATION_SERVER_SECRET=<generate a random key>
+COLLABORATION_SERVER_SECRET=<generate a secret>
 ```
 
 #### Docs
@@ -123,9 +120,9 @@ The Docs backend is built on the Django Framework.
 Set the following environment variables:
 ```env
 DJANGO_ALLOWED_HOSTS=https://docs.example.org
-DJANGO_SECRET_KEY=<generate a random key>
+DJANGO_SECRET_KEY=<generate a secret>
 DJANGO_SETTINGS_MODULE=impress.settings
-DJANGO_SUPERUSER_PASSWORD=<generate a random key>
+DJANGO_SUPERUSER_PASSWORD=<generate password>
 
 # Logging
 # Set to DEBUG level for dev only
@@ -177,22 +174,17 @@ FRONTEND_CSS_URL=https://storage.example.org/themes/custom.css # custom css
 > \[!WARNING\]
 > In a production environment, configure SSL/TLS termination to run your instance on https.
 
-Follow our [example](../examples/compose/nginx-proxy/README.md) for automatic generation and renewal of certificate with Let's Encrypt and nginx-proxy. If you have your own certificates and proxy setup, you can skip this part. 
-You will then need to set the following environment variables:
-```env
-VIRTUAL_HOST=https://docs.example.org
-VIRTUAL_PORT=8080
-LETSENCRYPT_HOST=https://docs.example.org
-```
+Our [example](../examples/compose/nginx-proxy/README.md) for automatic generation and renewal of certificate with Let's Encrypt and nginx-proxy. If you have your own certificates and proxy setup, you can skip this part. 
 
 ## Start Docs
-You are ready to start your Docs application ! 
+You are now ready to start your Docs application ! 
 ```bash
 curl -o compose.yaml https://github.com/unteem/docs/blob/compose-production/docs/examples/compose/docs/compose.yaml
 docker-compose up -d
 ```
 
 Your docs instance is now avalailable on the domain you defined, eg. https://docs.example.org
+
 
 ## Backup
 

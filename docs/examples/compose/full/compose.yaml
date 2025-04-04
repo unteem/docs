@@ -1,5 +1,4 @@
----
-name: docs-production
+version: '3'
 services:
   postgresql:
     image: postgres:16
@@ -9,11 +8,11 @@ services:
       timeout: 2s
       retries: 300
     env_file:
-    - env.d/production/postgresql
+    - env.d/postgresql
     environment:
     - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-    - ./data/production/databases/backend:/var/lib/postgresql/data/pgdata
+    - ./data/databases/backend:/var/lib/postgresql/data/pgdata
   redis:
     image: redis:5
   backend-migration:
@@ -23,9 +22,9 @@ services:
     environment:
     - DJANGO_CONFIGURATION=Production
     env_file:
-    - env.d/production/backend
-    - env.d/production/postgresql
-    - env.d/production/yprovider
+    - env.d/backend
+    - env.d/postgresql
+    - env.d/yprovider
     depends_on:
       postgresql:
         condition: service_healthy
@@ -41,9 +40,9 @@ services:
     environment:
     - DJANGO_CONFIGURATION=Production
     env_file:
-    - env.d/production/backend
-    - env.d/production/postgresql
-    - env.d/production/yprovider
+    - env.d/backend
+    - env.d/postgresql
+    - env.d/yprovider
     healthcheck:
       test: ["CMD", "python", "manage.py", "check"]
       interval: 15s
@@ -62,26 +61,16 @@ services:
         condition: service_started
       minio-bootstrap:
         condition: service_completed_successfully
-  celery:
-    user: ${DOCKER_USER:-1000}
-    image: lasuite/impress-backend:latest
-    command: ["celery", "-A", "impress.celery_app", "worker", "-l", "INFO"]
-    environment:
-    - DJANGO_CONFIGURATION=Production
-    env_file:
-    - env.d/production/backend
-    - env.d/production/postgresql
-    - env.d/production/yprovider
-    depends_on:
-    - backend
   frontend:
     image: lasuite/impress-frontend:latest
     user: ${DOCKER_USER:-1000}
+    volumes:
+    - ./nginx.conf:/etc/nginx/conf.d:ro
   y-provider:
     image: lasuite/impress-y-provider:latest
     user: ${DOCKER_USER:-1000}
     env_file:
-    - env.d/production/yprovider
+    - env.d/yprovider
   kc_postgresql:
     image: postgres:16
     healthcheck:
@@ -90,21 +79,17 @@ services:
       timeout: 2s
       retries: 300
     env_file:
-    - env.d/production/kc_postgresql
+    - env.d/kc_postgresql
     environment:
     - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-    - ./data/production/databases/keycloak:/var/lib/postgresql/data/pgdata
+    - ./data/databases/keycloak:/var/lib/postgresql/data/pgdata
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.0
     command: ["start"]
     env_file:
-    - env.d/production/keycloak
-    - env.d/production/kc_postgresql
-    ports:
-    - "8443:8443"
-    volumes:
-    - ${DOCS_PROD_KEYCLOAK_CERT_FOLDER:-./data/production/certs}:/etc/ssl/certs:ro
+    - env.d/keycloak
+    - env.d/kc_postgresql
     depends_on:
       kc_postgresql:
         condition: service_healthy
@@ -112,7 +97,7 @@ services:
   minio-bootstrap:
     image: minio/mc
     env_file:
-    - env.d/production/minio
+    - env.d/minio
     depends_on:
       minio:
         condition: service_healthy
@@ -126,7 +111,7 @@ services:
     user: ${DOCKER_USER:-1000}
     image: minio/minio
     env_file:
-    - env.d/production/minio
+    - env.d/minio
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 1s
@@ -135,16 +120,14 @@ services:
     entrypoint: ""
     command: minio server /data
     volumes:
-    - ./data/production/media:/data
+    - ./data/media:/data
   ingress:
     image: nginx:1.27
     ports:
     - 80:80
     - 443:443
     - "${DOCS_PROD_NGING_PORT:-443}:8083"
-    volumes:
-    - ./docker/files/production/etc/nginx/conf.d:/etc/nginx/conf.d:ro
-    - ${DOCS_PROD_NGINX_CERT_FOLDER:-./data/production/certs}:/etc/nginx/ssl:ro
+
     depends_on:
       frontend:
         condition: service_started

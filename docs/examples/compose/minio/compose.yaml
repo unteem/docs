@@ -1,23 +1,15 @@
----
+version: '3'
 services:
-  minio-bootstrap:
-    image: minio/mc
-    env_file:
-    - env.d/production/minio
-    depends_on:
-      minio:
-        condition: service_healthy
-        restart: true
-    entrypoint: >
-      sh -c " /usr/bin/mc alias set docs http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}
-      && \ /usr/bin/mc mb --ignore-existing docs/docs-media-storage && \ /usr/bin/mc
-      version enable docs/docs-media-storage && \ exit 0;"
-
   minio:
     user: ${DOCKER_USER:-1000}
     image: minio/minio
-    env_file:
-    - env.d/production/minio
+    environment:
+    - MINIO_ROOT_USER=<Set minio root username>
+    - MINIO_ROOT_PASSWORD=<Set minio root password>
+    # Uncomment and set your values if using our nginx proxy example
+    # - VIRTUAL_HOST=https://storage.example.org # used by nginx proxy 
+    # - VIRTUAL_PORT=9000 # used by nginx proxy
+    # - LETSENCRYPT_HOST=https://storage.example.org # used by lets encrypt to generate TLS certificate
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 1s
@@ -26,4 +18,4 @@ services:
     entrypoint: ""
     command: minio server /data
     volumes:
-    - ./data/production/media:/data
+    - ./data/data

@@ -1,7 +1,7 @@
 # Postgresql db container configuration
 POSTGRES_DB=keycloak
 POSTGRES_USER=keycloak
-POSTGRES_PASSWORD=<Set postgresql password>
+POSTGRES_PASSWORD=<generate postgres password>
 
 # Keycloak admin user
 KC_BOOTSTRAP_ADMIN_USERNAME=admin
@@ -13,14 +13,15 @@ KC_DB_SCHEMA=public
 KC_DB_HOST=postgresql
 KC_DB_NAME=${POSTGRES_DB}
 KC_DB_USER=${POSTGRES_USER}
-KC_DB_PASSWORD=${POSTGREPOSTGRES_PASSWORDS_USER}
+KC_DB_PASSWORD=${POSTGRES_PASSWORD}
 
 # Keycloak configuration
-KC_HOSTNAME=https://id.govsloveopensource.eu # Change with your own URL
+KC_HOSTNAME=https://id.example.org # Change with your own URL
 KC_PROXY_HEADERS=xforwarded # in this example we are runing behind an nginx proxy
 KC_HTTP_ENABLED=true # in this example we are runing behind an nginx proxy
 
 # Nginx proxy configuration
-VIRTUAL_HOST=https://id.govsloveopensource.eu # used by nginx proxy 
-VIRTUAL_PORT=8080 # used by nginx proxy
-LETSENCRYPT_HOST=https://id.govsloveopensource.eu # used by lets encrypt to generate TLS certificate
+# Uncomment the following variables if using the nginx proxy example
+# VIRTUAL_HOST=https://id.example.org # used by nginx proxy 
+# VIRTUAL_PORT=8080 # used by nginx proxy
+# LETSENCRYPT_HOST=https://id.example.org # used by lets encrypt to generate TLS certificate
