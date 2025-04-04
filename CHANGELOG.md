@@ -14,6 +14,7 @@ and this project adheres to
 - 📝(project) add troubleshoot doc #1066
 - 📝(project) add system-requirement doc #1066
 - 🔧(front) configure x-frame-options to DENY in nginx conf #1084
+-  (doc) add documentation to install with compose #855
 
 ### Changed
 
