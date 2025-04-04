@@ -1,0 +1,21 @@
+version: '3'
+services:
+  minio:
+    user: ${DOCKER_USER:-1000}
+    image: minio/minio
+    environment:
+    - MINIO_ROOT_USER=<Set minio root username>
+    - MINIO_ROOT_PASSWORD=<Set minio root password>
+    # Uncomment and set your values if using our nginx proxy example
+    # - VIRTUAL_HOST=https://storage.example.org # used by nginx proxy 
+    # - VIRTUAL_PORT=9000 # used by nginx proxy
+    # - LETSENCRYPT_HOST=https://storage.example.org # used by lets encrypt to generate TLS certificate
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 1s
+      timeout: 20s
+      retries: 300
+    entrypoint: ""
+    command: minio server /data
+    volumes:
+    - ./data/data
