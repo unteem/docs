@@ -3,6 +3,15 @@ entries:
   docs:
   - apiVersion: v2
     appVersion: latest
+    created: "2025-07-25T13:04:54.097299202Z"
+    digest: 092c8e23dd9984427115791c939a0c116b2dae45a96d8cc1d2eda4fdd94ddb91
+    name: docs
+    type: application
+    urls:
+    - https://unteem.github.io/docs/docs-3.4.2.tgz
+    version: 3.4.2
+  - apiVersion: v2
+    appVersion: latest
     created: "2025-07-11T08:28:56.009623847Z"
     digest: 75dc58a7a2c23093b4a289e99ef1af3a34ea62aac70144d4538cd8175f3292f4
     name: docs
@@ -244,4 +253,4 @@ entries:
     urls:
     - https://suitenumerique.github.io/docs/docs-0.0.1.tgz
     version: 0.0.1
-generated: "2025-07-11T08:28:56.00795752Z"
+generated: "2025-07-25T13:04:54.094960502Z"
